@@ -1,73 +1,59 @@
-# Welcome to your Lovable project
+# Crescer & Aprender - Frontend
 
-## Project info
+Sistema de gestão de escalas para voluntários do projeto social Crescer & Aprender.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## ⚠️ Importante: Desenvolvimento Local
 
-## How can I edit this code?
+O preview do Lovable roda em HTTPS, mas seu backend Java roda em `http://localhost:8080`. Navegadores bloqueiam requisições HTTP de páginas HTTPS (mixed content).
 
-There are several ways of editing your application.
+**Para testar com seu backend local, rode o frontend localmente:**
 
-**Use Lovable**
+### Instalação
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+```bash
+# Clone o repositório
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
+# Entre na pasta
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Instale as dependências
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Rode o frontend
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+O frontend estará disponível em `http://localhost:5173`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Configuração do Backend (CORS)
 
-**Use GitHub Codespaces**
+O backend precisa permitir CORS:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```java
+@Configuration
+public class CorsConfig implements WebMvcConfigurer {
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+                .allowedOrigins("*")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
+                .maxAge(3600);
+    }
+}
+```
 
-## What technologies are used for this project?
+## 📁 Estrutura
 
-This project is built with:
+- `/src/pages` - Login, Dashboard, Voluntários, Escalas
+- `/src/contexts` - AuthContext (JWT)
+- `/src/hooks` - useVoluntarios, useEscalas
+- `/src/lib/api.ts` - Configuração Axios
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🛠️ Tecnologias
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+- React 18 + TypeScript + Vite
+- Tailwind CSS + shadcn/ui
+- React Query + Axios
+- Framer Motion
