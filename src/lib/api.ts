@@ -33,8 +33,8 @@ api.interceptors.response.use(
 
 // Tipos
 export interface LoginCredentials {
-  username: string;
-  password: string;
+  email: string;
+  senha: string;
 }
 
 export interface Voluntario {
