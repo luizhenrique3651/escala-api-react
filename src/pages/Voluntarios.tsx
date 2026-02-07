@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Mail, Phone, User } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Mail, Phone, User, Lock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { useVoluntarios, useCriarVoluntario, useAtualizarVoluntario, useDeletarVoluntario } from '@/hooks/useVoluntarios';
-import { Voluntario, VoluntarioCreate } from '@/lib/api';
+import { Voluntario, VoluntarioCreate, UsuarioCreate } from '@/lib/api';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -41,9 +41,10 @@ export default function Voluntarios() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedVoluntario, setSelectedVoluntario] = useState<Voluntario | null>(null);
-  const [formData, setFormData] = useState<VoluntarioCreate>({
+  const [formData, setFormData] = useState({
     nome: '',
     email: '',
+    senha: '',
     telefone: '',
   });
 
@@ -64,11 +65,12 @@ export default function Voluntarios() {
       setFormData({
         nome: voluntario.nome,
         email: voluntario.email,
+        senha: '',
         telefone: voluntario.telefone || '',
       });
     } else {
       setSelectedVoluntario(null);
-      setFormData({ nome: '', email: '', telefone: '' });
+      setFormData({ nome: '', email: '', senha: '', telefone: '' });
     }
     setIsDialogOpen(true);
   };
@@ -76,17 +78,26 @@ export default function Voluntarios() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    const payload: VoluntarioCreate = {
+      nome: formData.nome,
+      usuario: {
+        email: formData.email,
+        senha: formData.senha,
+        role: 'COORDENADOR',
+      },
+    };
+
     if (selectedVoluntario) {
       await atualizarVoluntario.mutateAsync({
         id: selectedVoluntario.id,
-        voluntario: formData,
+        voluntario: payload,
       });
     } else {
-      await criarVoluntario.mutateAsync(formData);
+      await criarVoluntario.mutateAsync(payload);
     }
     
     setIsDialogOpen(false);
-    setFormData({ nome: '', email: '', telefone: '' });
+    setFormData({ nome: '', email: '', senha: '', telefone: '' });
   };
 
   const handleDelete = async () => {
@@ -275,6 +286,19 @@ export default function Voluntarios() {
                   required
                 />
               </div>
+              {!selectedVoluntario && (
+                <div className="space-y-2">
+                  <Label htmlFor="senha">Senha</Label>
+                  <Input
+                    id="senha"
+                    type="password"
+                    value={formData.senha}
+                    onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
+                    placeholder="••••••••"
+                    required={!selectedVoluntario}
+                  />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="telefone">Telefone (opcional)</Label>
                 <Input

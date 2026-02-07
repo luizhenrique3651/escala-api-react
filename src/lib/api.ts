@@ -46,11 +46,16 @@ export interface Voluntario {
   ativo: boolean;
 }
 
+export interface UsuarioCreate {
+  email: string;
+  senha: string;
+  role: string;
+}
+
 export interface VoluntarioCreate {
   nome: string;
-  email: string;
-  telefone?: string;
-  disponibilidade?: string[];
+  usuario: UsuarioCreate;
+  datasDisponiveis?: string[];
 }
 
 export interface Escala {
