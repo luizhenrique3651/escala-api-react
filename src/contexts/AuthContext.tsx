@@ -2,7 +2,11 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { authApi } from '@/lib/api';
 
 interface User {
+  voluntarioId: number;
   email: string;
+  nome: string;
+  role: string;
+  datasDisponiveis: string[];
   token: string;
 }
 
@@ -32,10 +36,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const token = await authApi.login({ email, senha: password });
+    const response = await authApi.login({ email, senha: password });
     
-    const userData: User = { email, token };
-    localStorage.setItem('auth_token', token);
+    const userData: User = {
+      voluntarioId: response.voluntarioId,
+      email: response.email,
+      nome: response.nome,
+      role: response.role,
+      datasDisponiveis: response.datasDisponiveis,
+      token: response.token,
+    };
+    localStorage.setItem('auth_token', userData.token);
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
   };
