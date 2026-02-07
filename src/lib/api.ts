@@ -37,6 +37,15 @@ export interface LoginCredentials {
   senha: string;
 }
 
+export interface LoginResponse {
+  voluntarioId: number;
+  email: string;
+  nome: string;
+  datasDisponiveis: string[];
+  role: string;
+  token: string;
+}
+
 export interface Voluntario {
   id: number;
   nome: string;
@@ -71,7 +80,7 @@ export interface EscalaCreate {
 
 // Auth API
 export const authApi = {
-  login: async (credentials: LoginCredentials): Promise<string> => {
+  login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
     const response = await api.post('/auth/login', credentials);
     return response.data;
   },
