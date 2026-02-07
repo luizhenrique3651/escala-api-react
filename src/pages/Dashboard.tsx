@@ -7,6 +7,7 @@ import { useEscalas } from '@/hooks/useEscalas';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO, isAfter } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { extrairDataEscala } from '@/lib/api';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -30,8 +31,34 @@ export default function Dashboard() {
 
   const hoje = new Date();
   const proximasEscalas = escalas
-    ?.filter((escala) => isAfter(parseISO(escala.data), hoje))
-    .sort((a, b) => parseISO(a.data).getTime() - parseISO(b.data).getTime())
+    ?.filter((escala) => {
+      try {
+        // Usar função helper que tenta data primeiro, depois dias
+        const dataStr = extrairDataEscala(escala);
+
+        if (!dataStr) {
+          console.warn('Escala sem dias nem data:', escala);
+          return false;
+        }
+
+        return isAfter(parseISO(dataStr), hoje);
+      } catch (e) {
+        console.error('Erro ao processar data da escala:', e);
+        return false;
+      }
+    })
+    .sort((a, b) => {
+      try {
+        const dataA = extrairDataEscala(a);
+        const dataB = extrairDataEscala(b);
+
+        if (!dataA || !dataB) return 0;
+
+        return parseISO(dataA).getTime() - parseISO(dataB).getTime();
+      } catch (e) {
+        return 0;
+      }
+    })
     .slice(0, 3);
 
   const totalVoluntarios = voluntarios?.length || 0;
@@ -146,16 +173,28 @@ export default function Dashboard() {
                   ))}
                 </div>
               ) : proximasEscalas && proximasEscalas.length > 0 ? (
-                proximasEscalas.map((escala) => (
+                proximasEscalas.map((escala) => {
+                  let dataFormatada = 'Data inválida';
+                  try {
+                    // Usar função helper que tenta data primeiro, depois dias
+                    const dataStr = extrairDataEscala(escala);
+                    if (dataStr) {
+                      dataFormatada = format(parseISO(dataStr), "EEEE, d 'de' MMMM", {
+                        locale: ptBR,
+                      });
+                    }
+                  } catch (e) {
+                    console.error('Erro ao formatar data:', e);
+                  }
+
+                  return (
                   <div
                     key={escala.id}
                     className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
                   >
                     <div>
                       <p className="font-medium text-foreground">
-                        {format(parseISO(escala.data), "EEEE, d 'de' MMMM", {
-                          locale: ptBR,
-                        })}
+                        {dataFormatada}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {escala.voluntarios?.length || 0} voluntários escalados
@@ -177,7 +216,8 @@ export default function Dashboard() {
                       )}
                     </div>
                   </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <Calendar className="w-12 h-12 mx-auto mb-3 opacity-50" />

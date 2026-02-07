@@ -24,8 +24,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useEscalas, useCriarEscala, useAtualizarEscala, useDeletarEscala } from '@/hooks/useEscalas';
 import { useVoluntarios } from '@/hooks/useVoluntarios';
-import { Escala, EscalaCreate } from '@/lib/api';
-import { format, parseISO, isSameMonth, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns';
+import { Escala, EscalaCreate, extrairDataEscala } from '@/lib/api';
+import { format, parseISO, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const containerVariants = {
@@ -55,12 +55,38 @@ export default function Escalas() {
   const atualizarEscala = useAtualizarEscala();
   const deletarEscala = useDeletarEscala();
 
-  const escalasDoMes = escalas?.filter((escala) =>
-    isSameMonth(parseISO(escala.data), currentMonth)
-  );
+  const escalasDoMes = escalas?.filter((escala) => {
+    try {
+      // Usar função helper que tenta data primeiro, depois dias
+      const dataStr = extrairDataEscala(escala);
+
+      if (!dataStr) {
+        console.warn('Escala sem dias nem datas:', escala);
+        return false;
+      }
+
+      return isSameMonth(parseISO(dataStr), currentMonth);
+    } catch (e) {
+      console.error('Erro ao filtrar escala por mês:', e);
+      return false;
+    }
+  });
 
   const getEscalaForDate = (date: Date) => {
-    return escalas?.find((escala) => isSameDay(parseISO(escala.data), date));
+    return escalas?.find((escala) => {
+      try {
+        // Usar função helper que tenta data primeiro, depois dias
+        const dataStr = extrairDataEscala(escala);
+
+        if (!dataStr) {
+          return false;
+        }
+
+        return isSameDay(parseISO(dataStr), date);
+      } catch (e) {
+        return false;
+      }
+    });
   };
 
   const handleOpenDialog = (date: Date, escala?: Escala) => {
@@ -109,13 +135,6 @@ export default function Escalas() {
     );
   };
 
-  const daysOfMonth = eachDayOfInterval({
-    start: startOfMonth(currentMonth),
-    end: endOfMonth(currentMonth),
-  });
-
-  // Filtrar apenas sábados (dia 6 da semana)
-  const sabados = daysOfMonth.filter((day) => day.getDay() === 6);
 
   return (
     <motion.div
@@ -209,8 +228,33 @@ export default function Escalas() {
                 <div className="space-y-4">
                   <AnimatePresence>
                     {escalasDoMes
-                      .sort((a, b) => parseISO(a.data).getTime() - parseISO(b.data).getTime())
-                      .map((escala) => (
+                      .sort((a, b) => {
+                        try {
+                          const dataA = extrairDataEscala(a);
+                          const dataB = extrairDataEscala(b);
+
+                          if (!dataA || !dataB) return 0;
+
+                          return parseISO(dataA).getTime() - parseISO(dataB).getTime();
+                        } catch (e) {
+                          return 0;
+                        }
+                      })
+                      .map((escala) => {
+                        let dataFormatada = 'Data inválida';
+                        try {
+                          // Usar função helper que tenta data primeiro, depois dias
+                          const dataStr = extrairDataEscala(escala);
+                          if (dataStr) {
+                            dataFormatada = format(parseISO(dataStr), "EEEE, d 'de' MMMM", {
+                              locale: ptBR,
+                            });
+                          }
+                        } catch (e) {
+                          console.error('Erro ao formatar data da escala:', e);
+                        }
+
+                        return (
                         <motion.div
                           key={escala.id}
                           variants={itemVariants}
@@ -221,9 +265,7 @@ export default function Escalas() {
                           <div className="flex items-start justify-between mb-3">
                             <div>
                               <h3 className="font-semibold text-foreground">
-                                {format(parseISO(escala.data), "EEEE, d 'de' MMMM", {
-                                  locale: ptBR,
-                                })}
+                                {dataFormatada}
                               </h3>
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="secondary" className="flex items-center gap-1">
@@ -244,7 +286,18 @@ export default function Escalas() {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem
-                                  onClick={() => handleOpenDialog(parseISO(escala.data), escala)}
+                                  onClick={() => {
+                                    try {
+                                      const dataStr = extrairDataEscala(escala);
+                                      if (dataStr) {
+                                        handleOpenDialog(parseISO(dataStr), escala);
+                                      } else {
+                                        console.warn('Escala sem data para editar');
+                                      }
+                                    } catch (e) {
+                                      console.error('Erro ao abrir edição:', e);
+                                    }
+                                  }}
                                 >
                                   <Pencil className="w-4 h-4 mr-2" />
                                   Editar
@@ -277,7 +330,9 @@ export default function Escalas() {
                             ))}
                           </div>
                         </motion.div>
-                      ))}
+                        );
+                      })
+                    }
                   </AnimatePresence>
                 </div>
               ) : (
@@ -399,14 +454,26 @@ export default function Escalas() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Remover Escala</DialogTitle>
-            <DialogDescription>
-              Tem certeza que deseja remover a escala de{' '}
-              <strong>
-                {selectedEscala &&
-                  format(parseISO(selectedEscala.data), "d 'de' MMMM", { locale: ptBR })}
-              </strong>
-              ? Esta ação não pode ser desfeita.
-            </DialogDescription>
+              <DialogDescription>
+                Tem certeza que deseja remover a escala de{' '}
+                <strong>
+                  {selectedEscala && (
+                    (() => {
+                      try {
+                        const dataStr = extrairDataEscala(selectedEscala);
+                        if (dataStr) {
+                          return format(parseISO(dataStr), "d 'de' MMMM", { locale: ptBR });
+                        }
+                        return 'Data inválida';
+                      } catch (e) {
+                        console.error('Erro ao formatar data para deleção:', e);
+                        return 'Data inválida';
+                      }
+                    })()
+                  )}
+                </strong>
+                ? Esta ação não pode ser desfeita.
+              </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>

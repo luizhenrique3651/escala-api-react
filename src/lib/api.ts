@@ -37,6 +37,34 @@ export interface LoginCredentials {
   senha: string;
 }
 
+// Função helper para extrair data com fallback
+// Prioridade: dias (objeto) → datas (array) → data (string)
+export function extrairDataEscala(escala: Escala): string | null {
+  // Estratégia 1: Se tem 'dias' (objeto com chaves de data), extrai dela (PRIORIDADE)
+  if (escala.dias && typeof escala.dias === 'object' && Object.keys(escala.dias).length > 0) {
+    const datasDosDias = Object.keys(escala.dias).filter(
+      (key) => !isNaN(Date.parse(key)) // Verifica se é uma data válida
+    );
+
+    if (datasDosDias.length > 0) {
+      return datasDosDias[0]; // Retorna a primeira data encontrada
+    }
+  }
+
+  // Estratégia 2: Se tem 'datas' (array de strings), usa a primeira
+  if (escala.datas && Array.isArray(escala.datas) && escala.datas.length > 0) {
+    return escala.datas[0];
+  }
+
+  // Estratégia 3: Se tem 'data' (string), usa ela como fallback
+  if (escala.data) {
+    return escala.data;
+  }
+
+  // Se não encontrar nada, retorna null
+  return null;
+}
+
 export interface LoginResponse {
   voluntarioId: number;
   email: string;
@@ -69,7 +97,9 @@ export interface VoluntarioCreate {
 
 export interface Escala {
   id: number;
-  data: string;
+  data?: string;  // String com data única
+  datas?: string[];  // Array de strings com datas (NOVO)
+  dias?: Record<string, unknown>;  // Objeto com dias (estrutura do backend)
   voluntarios: Voluntario[];
 }
 
