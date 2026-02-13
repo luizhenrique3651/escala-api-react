@@ -34,8 +34,16 @@ export default function Login() {
   return (
     <div className="min-h-screen flex">
       {/* Left Panel - Hero */}
-      <div className="hidden lg:flex lg:w-1/2 gradient-hero relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/10" />
+      <div
+        className="hidden lg:flex lg:w-1/2 relative overflow-hidden"
+        style={{
+          backgroundImage: 'url("/public/login.jpg")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      >
+        {/* Overlay escuro para melhorar legibilidade */}
+        <div className="absolute inset-0 bg-black/40" />
         <div className="relative z-10 flex flex-col justify-center px-12 text-white">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
